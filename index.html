@@ -74,6 +74,8 @@
   .hotspot.hs-teal{background:var(--teal)}
   .hotspot.hs-green{background:var(--green);color:#fff}
   .hotspot.hs-red{background:var(--red);color:#fff}
+  .hotspot.hs-facil{background:var(--magenta);color:#fff;width:28px;height:28px;font-size:13px;
+    box-shadow:0 0 0 4px rgba(184,50,124,.3)}
 
   section.block{max-width:1280px;margin:0 auto;padding:90px 40px 30px}
   section.block .kicker{color:var(--magenta);font-family:var(--mono);font-size:12px;letter-spacing:5px;margin-bottom:14px}
@@ -204,7 +206,7 @@
 
   <div class="hud" id="info-card"><h3></h3><h4></h4><p></p></div>
   <button class="hud" id="shot">📷 导出当前视角 PNG</button>
-  <div class="hud" id="hint">拖拽旋转 · 滚轮缩放 · 右键平移 ｜ 点击金色标记查看创新点</div>
+  <div class="hud" id="hint">拖拽旋转 · 滚轮缩放 · 右键平移 ｜ 金色标记=创新点 · 品红标记=船上设施</div>
 </section>
 
 <section class="block" id="route">
@@ -307,7 +309,7 @@
 <footer class="site">
   <span>启海号 QIHAI · 邮轮目的地化设计</span>
   <span style="font-family:var(--mono);letter-spacing:2px">VOYAGE LOG · 2026</span>
-  <span>3D 船体与设计图纸同源：均取自优化后船模（长度向 ×1.7 修正，顶点色彩绘 + 外板灯带）</span>
+  <span>3D 船体与设计图纸同源：均取自优化后船模（长度向 ×1.7 修正，船体面片直染彩绘 + 舷窗玻璃带）</span>
 </footer>
 
 <script type="importmap">
@@ -431,6 +433,12 @@ const _cA = new THREE.Color(), _cB = new THREE.Color();
 const lerpHex = (a, b, k) => _cA.setHex(a).lerp(_cB.setHex(b), k).getHex();
 let curEnv = null, envTween = null, envTex = null;
 let shipLightsMat = null; const fitoutMats = [];
+// 舷侧夜间泛光灯(真实点光源, 不贴几何体): shipL>0 的时段点亮, 照亮船体彩绘与窗带
+const hullFloods = [];
+for (const [fx, fz] of [[-90, 78], [70, 85], [-50, -78], [110, -70]]) {
+  const pl = new THREE.PointLight(0xffd9a8, 0, 320, 1.5);
+  pl.position.set(fx, 30, fz); scene.add(pl); hullFloods.push(pl);
+}
 
 function applyEnv(e) {
   paintSky(e.sky); skyTex.needsUpdate = true;
@@ -443,7 +451,8 @@ function applyEnv(e) {
   scene.fog.color.setHex(e.fog);
   renderer.toneMappingExposure = e.exp;
   starMat.opacity = e.stars;
-  if (shipLightsMat) shipLightsMat.emissiveIntensity = e.shipL * 3.6;   // 外板灯带夜间点亮
+  if (shipLightsMat) shipLightsMat.emissiveIntensity = e.shipL * 3.6;   // 外板灯带夜间点亮(已删, 防御保留)
+  for (const l of hullFloods) l.intensity = e.shipL * 800;              // 舷侧泛光灯: 夜间/黄昏照亮船体
 }
 function regenEnv(skyStops) {        // 过渡结束后重建一次 PMREM 环境反射
   const pm = new THREE.PMREMGenerator(renderer);
@@ -1410,21 +1419,27 @@ document.querySelectorAll('#scenes figure').forEach((f, i) =>
 /* ---------- 船上设施：剖视定位 ---------- */
 const FACILITIES = [
   { n:'轮机与保障层', dk:'DECK 01–03', en:'ENGINE & CREW', decks:[0,1,2], y:5.5,
+    hs:[-40, 7, 40],
     cam:[-10, 9.8, 78], tgt:[-10, 3.8, -6],
     desc:'双层底机舱、污水处理与船员生活区，光伏储能与环保系统的设备基座。' },
   { n:'海景与阳台客舱', dk:'DECK 04–09', en:'STATEROOMS', decks:[3,4,5,6,7,8], y:16,
+    hs:[30, 16, 40],
     cam:[0, 20, 88], tgt:[0, 16.5, -6],
     desc:'面向数字游民的长住客舱：工作台、高速网络与海景阳台，按周/月计费。' },
   { n:'主餐厅与中央剧院', dk:'DECK 10–11', en:'DINING & THEATRE', decks:[9,10], y:26,
+    hs:[-30, 26, 40],
     cam:[-12, 27.8, 56], tgt:[-12, 26.0, -6],
     desc:'南洋风味主餐厅 + 双层挑高剧院，雨天时民俗演出与分享会的室内主场。' },
   { n:'中庭 · 商业 · 接待', dk:'DECK 12', en:'ATRIUM & SHOPS', decks:[11], y:29.6,
+    hs:[40, 30, 40],
     cam:[0, 32.8, 42], tgt:[0, 30.6, -6],
     desc:'登船大堂、服务台与港口文创市集的室内区，船岸联动的迎宾门面。' },
   { n:'健身与水疗中心', dk:'DECK 13–14', en:'GYM & SPA', decks:[12,13], y:33,
+    hs:[-10, 34, 40],
     cam:[2, 34.0, 42], tgt:[2, 32.6, -6],
     desc:'海景健身房、瑜伽室与理疗区，向上衔接露天温泉与日出瑜伽露台。' },
   { n:'驾驶台与研学观测', dk:'DECK 16–17', en:'BRIDGE & OBSERVATION', decks:[15,16], y:40.5,
+    hs:[128, 41, 30],
     cam:[128, 42.5, 56], tgt:[128, 40.0, -6],
     desc:'舰桥与航海研学教室：海图、六分仪与模拟操舵，孩子的航海第一课。' },
 ];
@@ -1444,6 +1459,16 @@ function showFacility(i, instant=false) {
 }
 document.querySelectorAll('#facil .fcard').forEach((f, i) =>
   f.onclick = () => { scrollTo({ top:0, behavior:'instant' }); showFacility(i); });
+
+/* 设施 3D 常驻标记(品红小圆点 ⑤–⑩): 环绕视图常显, 点击=剖视特写 */
+const FACIL_HS = ['⑤','⑥','⑦','⑧','⑨','⑩'];
+const facilEls = FACILITIES.map((f, i) => {
+  const el = document.createElement('div');
+  el.className = 'hotspot hs-facil'; el.textContent = FACIL_HS[i]; el.title = f.n;
+  el.style.display = 'none';
+  el.onclick = () => showFacility(i);
+  heroEl.appendChild(el); return el;
+});
 
 /* ---------- 视图模式 ---------- */
 let viewMode = 'orbit';
@@ -1617,6 +1642,16 @@ function animate() {
     if (vis) {
       hsEls[i].style.left = (v3.x*.5 + .5) * innerWidth + 'px';
       hsEls[i].style.top = (-v3.y*.5 + .5) * innerHeight + 'px';
+    }
+  });
+  // 设施标记投影(仅环绕视图常显, 剖视/拆解时让位于内构)
+  FACILITIES.forEach((f, i) => {
+    v3.set(...f.hs).project(camera);
+    const vis = viewMode === 'orbit' && v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05;
+    facilEls[i].style.display = vis ? 'flex' : 'none';
+    if (vis) {
+      facilEls[i].style.left = (v3.x*.5 + .5) * innerWidth + 'px';
+      facilEls[i].style.top = (-v3.y*.5 + .5) * innerHeight + 'px';
     }
   });
 }
