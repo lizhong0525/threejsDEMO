@@ -1,0 +1,14 @@
+# 网页运行零依赖 —— three.js r164 已全部本地化在 web/vendor/, 打开页面不需要装任何包。
+#
+# 以下依赖仅用于模型管道与工具脚本:
+#   process_stl.py       assets/cruise.stl → web/ship2.glb (减面/定标/面片染色/细节生成)
+#   gen_geometry_v2.py   从 GLB 重新提取展板数据源 geometry.json / deck_data.json
+#   cdp_shot.py          无头验证截图 (websocket-client)
+#   gen_boards.py / gen_board2..5.py  展板 SVG 生成 (纯标准库, 仅列出以备完整性)
+
+trimesh==5.0.0
+fast_simplification==0.2.0
+numpy==2.5.2
+scipy==1.18.0
+shapely==2.1.2
+websocket-client==1.9.0
