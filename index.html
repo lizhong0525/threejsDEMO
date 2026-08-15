@@ -292,22 +292,22 @@
   <h2>设计图纸</h2>
   <div class="sub">基于《中纵剖面图和外形轮廓图.dwg》真实数据重绘 · SVG 矢量可直接打印</div>
   <div class="item"><div class="cap"><span class="drg">QH-01</span>01 总布置侧视图 <small>GENERAL ARRANGEMENT</small></div>
-    <img src="../boards/01_ga_profile.svg" alt="总布置侧视图"></div>
+    <img src="boards/01_ga_profile.svg" alt="总布置侧视图"></div>
   <div class="item"><div class="cap"><span class="drg">QH-02</span>02 双状态对比图 <small>SAILING vs BERTHING</small></div>
-    <img src="../boards/02_dual_state.svg" alt="双状态对比图"></div>
+    <img src="boards/02_dual_state.svg" alt="双状态对比图"></div>
   <div class="item"><div class="cap"><span class="drg">QH-03</span>03 六边形模块详图 <small>HEXAGONAL MODULAR SYSTEM</small></div>
-    <img src="../boards/03_hex_module.svg" alt="六边形模块详图"></div>
+    <img src="boards/03_hex_module.svg" alt="六边形模块详图"></div>
   <div class="item"><div class="cap"><span class="drg">QH-04</span>04 航线与船岸联动 <small>ROUTE &amp; SHIP-SHORE</small></div>
-    <img src="../boards/04_route.svg" alt="航线与船岸联动"></div>
+    <img src="boards/04_route.svg" alt="航线与船岸联动"></div>
   <div class="item"><div class="cap"><span class="drg">QH-05</span>05 服务与数字化运营 <small>SERVICE &amp; DIGITAL OPS</small></div>
-    <img src="../boards/05_service_digital.svg" alt="服务与数字化运营"></div>
+    <img src="boards/05_service_digital.svg" alt="服务与数字化运营"></div>
   <span class="snd" style="left:6%;top:12%">46</span>
 </section>
 
 <footer class="site">
   <span>启海号 QIHAI · 邮轮目的地化设计</span>
   <span style="font-family:var(--mono);letter-spacing:2px">VOYAGE LOG · 2026</span>
-  <span>3D 船体基于参考邮轮模型按比例修正（长度向 ×1.7）；设计图纸数据取自原始 DWG</span>
+  <span>3D 船体与设计图纸同源：均取自优化后船模（长度向 ×1.7 修正，顶点色彩绘 + 外板灯带）</span>
 </footer>
 
 <script type="importmap">
@@ -506,7 +506,7 @@ new GLTFLoader().load('./ship2.glb', (gltf) => {
     if (o.isMesh) {
       o.castShadow = true; o.receiveShadow = true;
       if (o.name === 'ext_lights') {           // 外板灯带：换自发光材质，夜间点亮
-        o.material = new THREE.MeshStandardMaterial({ color:0x3a2c1c, emissive:0xffc98a,
+        o.material = new THREE.MeshStandardMaterial({ color:0xe9e0cd, emissive:0xffc98a,
           emissiveIntensity:0, roughness:.4 });
         o.castShadow = false;
         shipLightsMat = o.material;
@@ -580,7 +580,7 @@ function buildExtras() {
   /* 六边形模块 */
   hexGroup = new THREE.Group();
   hexGroup.position.y = HZ.y;
-  const geoHex = new THREE.CylinderGeometry(2.9, 2.9, .55, 6);
+  const geoHex = new THREE.CylinderGeometry(2.9, 3.05, 1.15, 6);   // 加厚模块体(不再是薄饼)
   const geoPole = new THREE.CylinderGeometry(.09, .09, 2.6, 6);
   const geoTop = new THREE.ConeGeometry(2.6, 1.0, 6);
   const poleMat = new THREE.MeshStandardMaterial({ color:0xdad5c8, roughness:.5 });
@@ -589,7 +589,7 @@ function buildExtras() {
   for (let i = 0; i < N; i++) {
     const g = new THREE.Group();
     const body = new THREE.Mesh(geoHex, new THREE.MeshStandardMaterial({ roughness:.7 }));
-    body.position.y = .28; body.castShadow = body.receiveShadow = true;
+    body.position.y = .58; body.castShadow = body.receiveShadow = true;
     g.add(body);
     const canopy = new THREE.Group();                 // 遮阳亭配件
     for (const [px, pz] of [[-1.7,-1.7],[1.7,-1.7],[-1.7,1.7],[1.7,1.7]]) {
@@ -644,8 +644,8 @@ function buildExtras() {
   pvGroup = new THREE.Group();
   const pvMat = new THREE.MeshStandardMaterial({ color:0x1e3a5f, roughness:.25, metalness:.65 });
   for (const z of [HZ.z0 - 1.0, HZ.z1 + 1.0]) {
-    const pv = new THREE.Mesh(new THREE.BoxGeometry((HZ.x1 - HZ.x0)*.9, .18, 1.1), pvMat);
-    pv.position.set((HZ.x0 + HZ.x1)/2, HZ.y + .2, z); pvGroup.add(pv);
+    const pv = new THREE.Mesh(new THREE.BoxGeometry((HZ.x1 - HZ.x0)*.9, .3, 1.1), pvMat);
+    pv.position.set((HZ.x0 + HZ.x1)/2, HZ.y + .35, z); pvGroup.add(pv);
   }
   shipGroup.add(pvGroup);
 
@@ -1236,6 +1236,70 @@ function buildExtras() {
     flamp(g, 128, 42.4, -7, 110);
     fitoutGroup.add(g);
   }
+  { // ⑦ 全船贯通结构：客舱隔墙网格 + 走道 + 竖向交通核（告别空壳）
+    const g = new THREE.Group();
+    const lv = 6;
+    // —— 主客舱区(舯部) + 艏部客舱区：隔墙、走道、顶灯 ——
+    const walls = [];
+    for (const [x0, per] of [[-65, 30], [72, 8]]) {
+      for (let r = 0; r < lv; r++) {
+        const yy = 11.35 + r * 2.41;
+        // 艏部小区与舯部同层：隔墙（ cabin 间距 4.5 ）
+        for (let c = 0; c <= per; c++) walls.push([x0 + c * 4.5 - 2.25, yy, -6.5]);
+        // 走道：地板 + 顶部长条灯
+        const cl = per * 4.5;
+        fbx(g, cl, .18, 2.0, x0 + cl / 2 - 2.25, yy - 1.18, -10.9, fWood);
+        fbx(g, cl, .08, .5, x0 + cl / 2 - 2.25, yy + 1.12, -10.9, fGlow);
+      }
+      // 艏部小区同样补舱体（与 ② 同规格）
+      if (x0 === 72) {
+        const cab = new THREE.InstancedMesh(new THREE.BoxGeometry(3.1, 2.15, 4.2),
+          new THREE.MeshStandardMaterial({ color:0xf3ede2, roughness:.8 }), lv * per);
+        const win = new THREE.InstancedMesh(new THREE.PlaneGeometry(.9, .7),
+          new THREE.MeshStandardMaterial({ color:0x2a2a26, emissive:0xffd9a0, emissiveIntensity:1.1 }), lv * per);
+        const M = new THREE.Matrix4(); let k = 0;
+        for (let r = 0; r < lv; r++) for (let c = 0; c < per; c++) {
+          const xx = x0 + c * 4.5, yy = 11.35 + r * 2.41;
+          M.makeTranslation(xx, yy, -6.5); cab.setMatrixAt(k, M);
+          M.makeTranslation(xx, yy + .25, -4.38); win.setMatrixAt(k, M); k++;
+        }
+        cab.receiveShadow = true; g.add(cab); g.add(win);
+      }
+    }
+    const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(.12, 2.15, 4.2),
+      new THREE.MeshStandardMaterial({ color:0xe8e2d4, roughness:.85 }), walls.length);
+    const WM = new THREE.Matrix4();
+    walls.forEach((w, i) => { WM.makeTranslation(w[0], w[1], w[2]); wallMesh.setMatrixAt(i, WM); });
+    g.add(wallMesh);
+    // —— 竖向交通核 ×3：玻璃井道 + 发光核心（贯通 8..42m 全高） ——
+    const shaftGlass = new THREE.MeshStandardMaterial({ color:0x9adfe8, transparent:true,
+      opacity:.28, emissive:0x6ac8e0, emissiveIntensity:.35, roughness:.2 });
+    for (const sx of [-60, 0, 60]) {
+      fbx(g, 5.5, 34, 4.5, sx, 25, -14, shaftGlass);
+      fbx(g, 1.3, 33, 1.3, sx, 25, -14, fCyan);
+      fbx(g, 7.5, .4, 6.5, sx, 8.2, -14, fDark);          // 基座
+    }
+    flamp(g, 0, 25, -11, 120); flamp(g, 60, 25, -11, 120); flamp(g, -60, 25, -11, 120);
+    fitoutGroup.add(g);
+  }
+  { // ⑧ 观测酒廊（DECK 15，艏部上层）
+    const g = new THREE.Group();
+    fbx(g, 30, .3, 15, 108, 35.9, -8, fWhite);
+    for (let i = 0; i < 6; i++) {                                  // 弧形沙发
+      const a = (i - 2.5) * .28;
+      const sx = 108 + Math.sin(a) * 9, sz = -6 - Math.cos(a) * 5.5;
+      const sofa = fbx(g, 2.6, .8, 1.1, sx, 36.4, sz, fSeat); sofa.rotation.y = -a;
+    }
+    for (let i = 0; i < 3; i++) {                                  // 观景望远镜
+      const tx = 100 + i * 8;
+      const tel = new THREE.Mesh(new THREE.CylinderGeometry(.14, .18, 1.9, 8), fSteel);
+      tel.position.set(tx, 37.0, -3.2); tel.rotation.x = .5; g.add(tel);
+      fbx(g, .3, 1.1, .3, tx, 36.4, -3.5, fDark);
+    }
+    fbx(g, 8, 1.1, 2.6, 118, 36.5, -12, fWood);                    // 吧台
+    flamp(g, 108, 38.6, -8, 120);
+    fitoutGroup.add(g);
+  }
   fitoutGroup.visible = false;
   fitoutGroup.traverse(o => { if (o.isMesh) fitoutMats.push(o.material); });
   shipGroup.add(fitoutGroup);
@@ -1338,7 +1402,7 @@ function showScene(i, instant=false) {
   card.querySelector('h4').textContent = s.en;
   card.querySelector('p').textContent = s.desc;
   flyEnvTo(s.env, instant);
-  flyTo(new THREE.Vector3(...s.cam), new THREE.Vector3(...s.tgt));
+  flyTo(new THREE.Vector3(...s.cam), new THREE.Vector3(...s.tgt), instant);
 }
 document.querySelectorAll('#scenes figure').forEach((f, i) =>
   f.onclick = () => { scrollTo({ top:0, behavior:'instant' }); showScene(i); });
@@ -1346,32 +1410,32 @@ document.querySelectorAll('#scenes figure').forEach((f, i) =>
 /* ---------- 船上设施：剖视定位 ---------- */
 const FACILITIES = [
   { n:'轮机与保障层', dk:'DECK 01–03', en:'ENGINE & CREW', decks:[0,1,2], y:5.5,
-    cam:[-10, 10, 66], tgt:[-10, 6, -6],
+    cam:[-10, 9.8, 78], tgt:[-10, 3.8, -6],
     desc:'双层底机舱、污水处理与船员生活区，光伏储能与环保系统的设备基座。' },
   { n:'海景与阳台客舱', dk:'DECK 04–09', en:'STATEROOMS', decks:[3,4,5,6,7,8], y:16,
     cam:[0, 20, 88], tgt:[0, 16.5, -6],
     desc:'面向数字游民的长住客舱：工作台、高速网络与海景阳台，按周/月计费。' },
   { n:'主餐厅与中央剧院', dk:'DECK 10–11', en:'DINING & THEATRE', decks:[9,10], y:26,
-    cam:[-12, 30, 62], tgt:[-12, 26, -6],
+    cam:[-12, 27.8, 56], tgt:[-12, 26.0, -6],
     desc:'南洋风味主餐厅 + 双层挑高剧院，雨天时民俗演出与分享会的室内主场。' },
   { n:'中庭 · 商业 · 接待', dk:'DECK 12', en:'ATRIUM & SHOPS', decks:[11], y:29.6,
-    cam:[0, 33.5, 46], tgt:[0, 30.8, -6],
+    cam:[0, 32.8, 42], tgt:[0, 30.6, -6],
     desc:'登船大堂、服务台与港口文创市集的室内区，船岸联动的迎宾门面。' },
   { n:'健身与水疗中心', dk:'DECK 13–14', en:'GYM & SPA', decks:[12,13], y:33,
-    cam:[2, 36, 46], tgt:[2, 33, -6],
+    cam:[2, 34.0, 42], tgt:[2, 32.6, -6],
     desc:'海景健身房、瑜伽室与理疗区，向上衔接露天温泉与日出瑜伽露台。' },
   { n:'驾驶台与研学观测', dk:'DECK 16–17', en:'BRIDGE & OBSERVATION', decks:[15,16], y:40.5,
-    cam:[128, 43.5, 32], tgt:[128, 40.4, -6],
+    cam:[128, 40.7, 14], tgt:[128, 40.0, -8],
     desc:'舰桥与航海研学教室：海图、六分仪与模拟操舵，孩子的航海第一课。' },
 ];
-function showFacility(i) {
+function showFacility(i, instant=false) {
   const f = FACILITIES[i];
   setView('section');
   card.style.display = 'block';
   card.querySelector('h3').innerHTML = `<b>▣</b>${f.n}`;
   card.querySelector('h4').textContent = `${f.en} · ${f.dk}`;
   card.querySelector('p').textContent = f.desc;
-  flyTo(new THREE.Vector3(...f.cam), new THREE.Vector3(...f.tgt));
+  flyTo(new THREE.Vector3(...f.cam), new THREE.Vector3(...f.tgt), instant);
   for (const d of f.decks) {                     // 对应甲板层品红闪烁定位
     const m = deckMeshes[d] && deckMeshes[d].material; if (!m) continue;
     m.emissive.setHex(0xb8327c); m.emissiveIntensity = 1.5;
@@ -1385,6 +1449,7 @@ document.querySelectorAll('#facil .fcard').forEach((f, i) =>
 let viewMode = 'orbit';
 const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
 function setView(mode) {
+  const changed = mode !== viewMode;      // 仅视图真正切换时才飞默认机位(避免覆盖 URL 直达机位)
   viewMode = mode;
   flyEnvTo('dusk');
   for (const b of ['orbit','explode','section'])
@@ -1420,9 +1485,9 @@ function setView(mode) {
     fitoutGroup.visible = section;
     for (const m of fitoutMats) { m.clippingPlanes = clip; m.needsUpdate = true; }
   }
-  if (explode) flyTo(new THREE.Vector3(340, 160, 340), new THREE.Vector3(0, 72, 0));
-  if (section) flyTo(new THREE.Vector3(0, 27, 275), new THREE.Vector3(0, 27, 0));
-  if (mode === 'orbit') flyTo(new THREE.Vector3(315, 82, 245), new THREE.Vector3(20, 26, 0));
+  if (explode && changed) flyTo(new THREE.Vector3(340, 160, 340), new THREE.Vector3(0, 72, 0));
+  if (section && changed) flyTo(new THREE.Vector3(0, 27, 275), new THREE.Vector3(0, 27, 0));
+  if (mode === 'orbit' && changed) flyTo(new THREE.Vector3(315, 82, 245), new THREE.Vector3(20, 26, 0));
 }
 
 /* ---------- 状态切换 ---------- */
@@ -1469,7 +1534,10 @@ function stepTweens(dt) {
   }
 }
 let camTween = null;
-function flyTo(pos, tgt) { camTween = { t:0, dur:1300, p0:camera.position.clone(), p1:pos, t0:controls.target.clone(), t1:tgt }; }
+function flyTo(pos, tgt, instant=false) {
+  if (instant) { camTween = null; camera.position.copy(pos); controls.target.copy(tgt); return; }
+  camTween = { t:0, dur:1300, p0:camera.position.clone(), p1:pos, t0:controls.target.clone(), t1:tgt };
+}
 
 /* ---------- 主循环 ---------- */
 const clock = new THREE.Clock();
@@ -1567,7 +1635,7 @@ if (qs.get('t')) flyEnvTo(qs.get('t'), true);
 if (qs.get('view')) setView(qs.get('view'));
 if (qs.get('hs') !== null && qs.get('hs') !== undefined && qs.get('hs') !== '') showInfo(+qs.get('hs'));
 if (qs.get('scene')) showScene(+qs.get('scene'), true);
-if (qs.get('facil') !== null && qs.get('facil') !== '') showFacility(+qs.get('facil'));
+if (qs.get('facil') !== null && qs.get('facil') !== '') showFacility(+qs.get('facil'), true);
 if (qs.get('cam')) {                           // 直接指定相机(截图用): ?cam=x,y,z&tgt=x,y,z
   const c = qs.get('cam').split(',').map(Number);
   const t = (qs.get('tgt') || '0,25,0').split(',').map(Number);
